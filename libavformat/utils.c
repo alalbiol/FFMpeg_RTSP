@@ -1488,6 +1488,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     int ret = 0, i, got_packet = 0;
     AVDictionary *metadata = NULL;
+    uint64_t rtp_ntp_time_stamp = 0;
 
     av_init_packet(pkt);
 
@@ -1497,6 +1498,10 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
         /* read next packet */
         ret = ff_read_packet(s, &cur_pkt);
+        
+        //COPY OVER the RTP time stamp TODO: just create a local copy
+        rtp_ntp_time_stamp = cur_pkt.rtp_ntp_time_stamp;
+
         if (ret < 0) {
             if (ret == AVERROR(EAGAIN))
                 return ret;
@@ -1682,6 +1687,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                av_ts2str(pkt->dts),
                pkt->size, pkt->duration, pkt->flags);
 
+    pkt->rtp_ntp_time_stamp = rtp_ntp_time_stamp; //Just added this line in the if statement.
     return ret;
 }
 

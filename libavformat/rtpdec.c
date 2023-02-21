@@ -567,6 +567,9 @@ void ff_rtp_parse_set_crypto(RTPDemuxContext *s, const char *suite,
  */
 static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp)
 {
+    uint64_t offsetTime = 0;
+    uint64_t rtp_ntp_time_stamp = timestamp;
+
     if (pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE)
         return; /* Timestamp already set by depacketizer */
     if (timestamp == RTP_NOTS_VALUE)
@@ -598,6 +601,14 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
     s->timestamp = timestamp;
     pkt->pts     = s->unwrapped_timestamp + s->range_start_offset -
                    s->base_timestamp;
+
+    /*RM: Sets the RTP time stamp in the AVPacket */
+    if (!s->last_rtcp_ntp_time || !s->last_rtcp_timestamp)
+        offsetTime = 0;
+    else
+        offsetTime = s->last_rtcp_ntp_time - ((uint64_t)(s->last_rtcp_timestamp) * 65536);
+    rtp_ntp_time_stamp = ((uint64_t)(timestamp) * 65536) + offsetTime;
+    pkt->rtp_ntp_time_stamp = rtp_ntp_time_stamp;
 }
 
 static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,
